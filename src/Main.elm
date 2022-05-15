@@ -122,16 +122,39 @@ viewMatrices model =
         cellPad =
             A.style "padding" "15px"
 
-        matrix mat rowDim colDim color =
+        matrix mat rowDim colDim =
             tbl <|
                 List.map
                     (\i ->
                         Html.tr [] <|
                             List.map
                                 (\j ->
-                                    Html.td [ A.style "color" color, cellPad ]
-                                        [ Html.text (elemLetter mat)
-                                        , Html.sub [] [ Html.text <| String.fromInt i ++ "," ++ String.fromInt j ]
+                                    Html.td
+                                        [ A.style "color" (elementColor mat)
+                                        , cellPad
+                                        , E.onMouseEnter (HoverCell mat i j)
+                                        , E.onMouseLeave ClearHover
+                                        ]
+                                        [ Html.span
+                                            [ E.onMouseOver (HoverElement mat i j)
+                                            , E.onMouseLeave (HoverCell mat i j)
+                                            , case model.focus of
+                                                Element fm fi fj ->
+                                                    if fm == mat && fi == i && fj == j then
+                                                        A.style "background-color" "gray"
+
+                                                    else
+                                                        A.style "background-color" "white"
+
+                                                Cell _ _ _ ->
+                                                    A.style "background-color" "white"
+
+                                                NoFocus ->
+                                                    A.style "background-color" "white"
+                                            ]
+                                            [ Html.text (elemLetter mat)
+                                            , Html.sub [] [ Html.text <| String.fromInt i ++ "," ++ String.fromInt j ]
+                                            ]
                                         ]
                                 )
                             <|
@@ -140,7 +163,7 @@ viewMatrices model =
                 <|
                     List.range 1 (rowDim model)
 
-        matrix2 mat1 mat2 rowDim1 middleDim colDim2 color1 color2 =
+        matrix2 mat1 mat2 rowDim1 middleDim colDim2 =
             tbl <|
                 List.map
                     (\i ->
@@ -152,11 +175,11 @@ viewMatrices model =
                                             List.intersperse [ Html.text " + " ] <|
                                                 List.map
                                                     (\k ->
-                                                        [ Html.span [ A.style "color" color1 ]
+                                                        [ Html.span [ A.style "color" (elementColor mat1) ]
                                                             [ Html.text (elemLetter mat1)
                                                             , Html.sub [] [ Html.text <| String.fromInt i ++ "," ++ String.fromInt k ]
                                                             ]
-                                                        , Html.span [ A.style "color" color2 ]
+                                                        , Html.span [ A.style "color" (elementColor mat2) ]
                                                             [ Html.text (elemLetter mat2)
                                                             , Html.sub [] [ Html.text <| String.fromInt k ++ "," ++ String.fromInt j ]
                                                             ]
@@ -185,15 +208,15 @@ viewMatrices model =
                                                     (\k ->
                                                         List.map
                                                             (\l ->
-                                                                [ Html.span [ A.style "color" "red" ]
+                                                                [ Html.span [ A.style "color" (elementColor A) ]
                                                                     [ Html.text (elemLetter A)
                                                                     , Html.sub [] [ Html.text <| String.fromInt i ++ "," ++ String.fromInt k ]
                                                                     ]
-                                                                , Html.span [ A.style "color" "green" ]
+                                                                , Html.span [ A.style "color" (elementColor B) ]
                                                                     [ Html.text (elemLetter B)
                                                                     , Html.sub [] [ Html.text <| String.fromInt k ++ "," ++ String.fromInt l ]
                                                                     ]
-                                                                , Html.span [ A.style "color" "blue" ]
+                                                                , Html.span [ A.style "color" (elementColor C) ]
                                                                     [ Html.text (elemLetter C)
                                                                     , Html.sub [] [ Html.text <| String.fromInt l ++ "," ++ String.fromInt j ]
                                                                     ]
@@ -216,29 +239,42 @@ viewMatrices model =
     in
     Html.div []
         [ flexRow
-            [ matrix A .dimP .dimQ "red"
-            , matrix B .dimQ .dimR "green"
-            , matrix C .dimR .dimS "blue"
+            [ matrix A .dimP .dimQ
+            , matrix B .dimQ .dimR
+            , matrix C .dimR .dimS
             ]
         , Html.div [] [ Html.text "=" ]
         , flexRow
-            [ matrix2 A B .dimP .dimQ .dimR "red" "green"
-            , matrix C .dimR .dimS "blue"
+            [ matrix2 A B .dimP .dimQ .dimR
+            , matrix C .dimR .dimS
             ]
         , Html.div [] [ Html.text "=" ]
         , matrix3
         , Html.div [] [ Html.text "=" ]
         , flexRow
-            [ matrix A .dimP .dimQ "red"
-            , matrix2 B C .dimQ .dimR .dimS "green" "blue"
+            [ matrix A .dimP .dimQ
+            , matrix2 B C .dimQ .dimR .dimS
             ]
         , Html.div [] [ Html.text "=" ]
         , flexRow
-            [ matrix A .dimP .dimQ "red"
-            , matrix B .dimQ .dimR "green"
-            , matrix C .dimR .dimS "blue"
+            [ matrix A .dimP .dimQ
+            , matrix B .dimQ .dimR
+            , matrix C .dimR .dimS
             ]
         ]
+
+
+elementColor : Matrix -> String
+elementColor m =
+    case m of
+        A ->
+            "red"
+
+        B ->
+            "green"
+
+        C ->
+            "blue"
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -261,10 +297,10 @@ update msg model =
             )
 
         HoverElement m i j ->
-            ( model, Cmd.none )
+            ( { model | focus = Element m i j }, Cmd.none )
 
         HoverCell m i j ->
-            ( model, Cmd.none )
+            ( { model | focus = Cell m i j }, Cmd.none )
 
         ClearHover ->
             ( { model | focus = NoFocus }, Cmd.none )
@@ -296,8 +332,6 @@ onNumber toMsg =
 
 
 
--- TODO bigger padding within cells, so it's clearer what belongs to one cell\
--- TODO row-based layout
 -- TODO brackets around matrices as in http://matrixmultiplication.xyz/
 -- TODO in ABC matrix organize the terms so it's visible that each cell has entire copy of B
 -- TODO highlighting on hover
