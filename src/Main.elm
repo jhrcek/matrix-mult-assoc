@@ -4,6 +4,7 @@ import Browser exposing (Document)
 import Html exposing (Html)
 import Html.Attributes as A
 import Html.Events as E
+import Matrix
 
 
 type alias Model =
@@ -335,3 +336,5 @@ onNumber toMsg =
 -- TODO brackets around matrices as in http://matrixmultiplication.xyz/
 -- TODO in ABC matrix organize the terms so it's visible that each cell has entire copy of B
 -- TODO highlighting on hover
+-- TODO add AST representing unevaluated expression with + and *, symbolic way to multiply 2 matrices
+-- TODO
